@@ -1,30 +1,66 @@
 # Codex Monitor
 
-一个原生 macOS 菜单栏应用：
+A native macOS menu bar app that shows what Codex is doing without keeping the Codex window open.
 
-- 余量方框始终显示；Codex 有任务运行时，白色半透明光带沿方框外沿连续循环。
-- 图标右上角用蓝色圆形徽标显示正在运行的任务数。
-- 每个任务完成时，图标闪烁一次；同时完成多个任务会依次闪烁。
-- 中断任务会立即停止计数，但不会触发“完成”闪烁。
-- 空闲时显示剩余额度，例如 `84% 5h`；没有 5 小时窗口时显示周额度，例如 `75% w`。
-- 点击图标可查看当前任务、打开 Codex、手动刷新或测试闪烁效果。
+## Install with Codex
 
-应用只读 `~/.codex/state_5.sqlite` 和对应的本地 rollout 记录，以
-`task_started` / `task_complete` 事件判断状态。它不会修改 Codex 数据。
+Paste this into Codex:
 
-## 构建
+```text
+Install https://github.com/EpirusYUE/codex-menu-bar-monitor
+```
+
+Codex should clone the repository and run:
 
 ```bash
-chmod +x scripts/build-app.sh
+./scripts/install.sh
+```
+
+The installer builds the app locally, installs it as `~/Applications/Codex Monitor.app`, and launches it. No administrator password is required.
+
+## Features
+
+- Always shows the preferred remaining Codex quota: the 5-hour window when available, otherwise the weekly window.
+- Draws a smooth white light trail around the quota badge while Codex is working.
+- Shows the number of active tasks in a blue badge.
+- Flashes once for every completed task, including multiple completions between status checks.
+- Stops immediately for interrupted tasks without showing a completion flash.
+- Keeps the last known quota visible when Codex has been idle or its status is temporarily unavailable.
+- Provides a menu for active tasks, manual refresh, opening Codex, and testing the completion flash.
+
+## Privacy
+
+Codex Monitor is read-only. It reads Codex lifecycle events from `~/.codex/state_5.sqlite` and local rollout files, and queries the bundled Codex app-server for rate-limit information. It does not modify Codex data or send task content anywhere.
+
+## Requirements
+
+- macOS 13 or later
+- Codex installed at `/Applications/Codex.app`
+- Xcode Command Line Tools
+
+Install the command-line tools if needed:
+
+```bash
+xcode-select --install
+```
+
+## Build manually
+
+```bash
 ./scripts/build-app.sh
 open "outputs/Codex Monitor.app"
 ```
 
-也可以在终端验证当前检测结果：
+Check detected task and quota state from Terminal:
 
 ```bash
 "outputs/Codex Monitor.app/Contents/MacOS/CodexMenuBar" --status
 "outputs/Codex Monitor.app/Contents/MacOS/CodexMenuBar" --quota
 ```
 
-要求 macOS 13 或更高版本，以及 Xcode Command Line Tools。
+## Uninstall
+
+```bash
+pkill -x CodexMenuBar 2>/dev/null || true
+rm -rf "$HOME/Applications/Codex Monitor.app"
+```
