@@ -35,7 +35,7 @@ Codex Monitor is read-only. It reads Codex lifecycle events from `~/.codex/state
 ## Requirements
 
 - macOS 13 or later
-- Codex installed at `/Applications/Codex.app`
+- ChatGPT installed at `/Applications/ChatGPT.app` (legacy `/Applications/Codex.app` is also supported)
 - Xcode Command Line Tools
 
 Install the command-line tools if needed:

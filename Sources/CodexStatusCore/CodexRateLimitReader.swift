@@ -58,14 +58,17 @@ public enum RateLimitResponseParser {
 }
 
 public final class CodexRateLimitReader: @unchecked Sendable {
-    private let codexExecutable: String
+    private let codexExecutable: String?
 
-    public init(codexExecutable: String = "/Applications/Codex.app/Contents/Resources/codex") {
-        self.codexExecutable = codexExecutable
+    public init(codexExecutable: String? = nil) {
+        self.codexExecutable = codexExecutable ?? CodexInstallationLocator.codexExecutablePath()
     }
 
     public func readQuota() -> CodexQuota? {
-        guard FileManager.default.isExecutableFile(atPath: codexExecutable) else { return nil }
+        guard
+            let codexExecutable,
+            FileManager.default.isExecutableFile(atPath: codexExecutable)
+        else { return nil }
 
         let initialize = #"{"id":1,"method":"initialize","params":{"clientInfo":{"name":"codex-menubar","version":"0.2.0"}}}"#
         let request = #"{"id":2,"method":"account/rateLimits/read","params":null}"#

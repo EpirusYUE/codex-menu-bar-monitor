@@ -292,8 +292,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openCodex() {
+        guard let applicationURL = CodexInstallationLocator.applicationURL() else { return }
         NSWorkspace.shared.openApplication(
-            at: URL(fileURLWithPath: "/Applications/Codex.app"),
+            at: applicationURL,
             configuration: NSWorkspace.OpenConfiguration()
         )
     }
