@@ -5,12 +5,20 @@ public struct CodexTask: Equatable, Sendable {
     public let id: String
     public let title: String
     public let rolloutPath: String
+    public let workingDirectory: String
     public let startedAt: Date?
 
-    public init(id: String, title: String, rolloutPath: String, startedAt: Date?) {
+    public init(
+        id: String,
+        title: String,
+        rolloutPath: String,
+        workingDirectory: String,
+        startedAt: Date?
+    ) {
         self.id = id
         self.title = title
         self.rolloutPath = rolloutPath
+        self.workingDirectory = workingDirectory
         self.startedAt = startedAt
     }
 }
@@ -20,6 +28,7 @@ public struct CodexActivitySnapshot: Equatable, Sendable {
     public let completedTaskIDs: Set<String>
     public let abortedTaskIDs: Set<String>
     public let newlyCompletedEventCount: Int
+    public let newlyCompletedTasks: [CodexTask]
     public let sampledAt: Date
 
     public init(
@@ -27,12 +36,14 @@ public struct CodexActivitySnapshot: Equatable, Sendable {
         completedTaskIDs: Set<String> = [],
         abortedTaskIDs: Set<String> = [],
         newlyCompletedEventCount: Int = 0,
+        newlyCompletedTasks: [CodexTask] = [],
         sampledAt: Date = Date()
     ) {
         self.runningTasks = runningTasks
         self.completedTaskIDs = completedTaskIDs
         self.abortedTaskIDs = abortedTaskIDs
         self.newlyCompletedEventCount = newlyCompletedEventCount
+        self.newlyCompletedTasks = newlyCompletedTasks
         self.sampledAt = sampledAt
     }
 }
@@ -74,6 +85,7 @@ public final class CodexActivityReader: @unchecked Sendable {
         let id: String
         let title: String
         let rolloutPath: String
+        let workingDirectory: String
     }
 
     private struct FileCursor {
@@ -101,10 +113,22 @@ public final class CodexActivityReader: @unchecked Sendable {
         var completedTaskIDs: Set<String> = []
         var abortedTaskIDs: Set<String> = []
         var newlyCompletedEventCount = 0
+        var newlyCompletedTasks: [CodexTask] = []
 
         for record in records {
             let result = latestLifecycleEvent(atPath: record.rolloutPath)
             newlyCompletedEventCount += result.newCompletions
+            if result.newCompletions > 0 {
+                for _ in 0..<result.newCompletions {
+                    newlyCompletedTasks.append(CodexTask(
+                        id: record.id,
+                        title: record.title,
+                        rolloutPath: record.rolloutPath,
+                        workingDirectory: record.workingDirectory,
+                        startedAt: nil
+                    ))
+                }
+            }
             guard let event = result.event else { continue }
             switch event {
             case let .started(date):
@@ -112,6 +136,7 @@ public final class CodexActivityReader: @unchecked Sendable {
                     id: record.id,
                     title: record.title,
                     rolloutPath: record.rolloutPath,
+                    workingDirectory: record.workingDirectory,
                     startedAt: date
                 ))
             case .completed:
@@ -128,7 +153,8 @@ public final class CodexActivityReader: @unchecked Sendable {
             runningTasks: tasks,
             completedTaskIDs: completedTaskIDs,
             abortedTaskIDs: abortedTaskIDs,
-            newlyCompletedEventCount: newlyCompletedEventCount
+            newlyCompletedEventCount: newlyCompletedEventCount,
+            newlyCompletedTasks: newlyCompletedTasks
         )
     }
 
@@ -145,7 +171,7 @@ public final class CodexActivityReader: @unchecked Sendable {
         // A running task continually updates its rollout. Seven days keeps startup
         // bounded while still covering unusually long Codex runs.
         let query = """
-            SELECT id, title, rollout_path
+            SELECT id, title, rollout_path, cwd
             FROM threads
             WHERE archived = 0 AND updated_at >= CAST(strftime('%s','now') AS INTEGER) - 604800
             ORDER BY updated_at DESC
@@ -161,12 +187,14 @@ public final class CodexActivityReader: @unchecked Sendable {
             guard
                 let idText = sqlite3_column_text(statement, 0),
                 let titleText = sqlite3_column_text(statement, 1),
-                let pathText = sqlite3_column_text(statement, 2)
+                let pathText = sqlite3_column_text(statement, 2),
+                let workingDirectoryText = sqlite3_column_text(statement, 3)
             else { continue }
             records.append(ThreadRecord(
                 id: String(cString: idText),
                 title: String(cString: titleText),
-                rolloutPath: String(cString: pathText)
+                rolloutPath: String(cString: pathText),
+                workingDirectory: String(cString: workingDirectoryText)
             ))
         }
         return records

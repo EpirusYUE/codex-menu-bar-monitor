@@ -26,3 +26,37 @@ import Testing
     #expect(payload["title"] as? String == "Codex task completed")
     #expect(payload["message"] as? String == "One task finished")
 }
+
+@Test func formatsCompletionDetails() {
+    let task = CodexTask(
+        id: "thread-1",
+        title: "Test task",
+        rolloutPath: "/tmp/rollout.jsonl",
+        workingDirectory: "/Users/test/Documents/sample-project",
+        startedAt: nil
+    )
+    let quota = CodexQuota(remainingPercent: 72, windowLabel: "5h", windowDurationMinutes: 300)
+    let content = CompletionNotificationFormatter.content(
+        task: task,
+        quota: quota,
+        remainingTaskCount: 2
+    )
+    #expect(content.title == "Codex 任务完成")
+    #expect(content.message == "sample-project · 5h 72% · 剩余任务 2")
+}
+
+@Test func abbreviatesLongProjectFolder() {
+    let task = CodexTask(
+        id: "thread-1",
+        title: "Test task",
+        rolloutPath: "/tmp/rollout.jsonl",
+        workingDirectory: "/Users/test/Documents/this-is-a-very-long-project-name",
+        startedAt: nil
+    )
+    let content = CompletionNotificationFormatter.content(
+        task: task,
+        quota: nil,
+        remainingTaskCount: 0
+    )
+    #expect(content.message == "this-is-a-very-lo… · 用量暂不可用 · 剩余任务 0")
+}

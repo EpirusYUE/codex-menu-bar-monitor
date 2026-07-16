@@ -1,5 +1,33 @@
 import Foundation
 
+public struct CompletionNotificationContent: Equatable, Sendable {
+    public let title: String
+    public let message: String
+}
+
+public enum CompletionNotificationFormatter {
+    public static func content(
+        task: CodexTask,
+        quota: CodexQuota?,
+        remainingTaskCount: Int
+    ) -> CompletionNotificationContent {
+        let folderName = URL(fileURLWithPath: task.workingDirectory).lastPathComponent
+        let rawFolder = folderName.isEmpty ? task.workingDirectory : folderName
+        let displayFolder = abbreviated(rawFolder, maximumLength: 18)
+        let quotaText = quota.map { "\($0.windowLabel) \($0.remainingPercent)%" }
+            ?? "用量暂不可用"
+        return CompletionNotificationContent(
+            title: "Codex 任务完成",
+            message: "\(displayFolder) · \(quotaText) · 剩余任务 \(remainingTaskCount)"
+        )
+    }
+
+    private static func abbreviated(_ value: String, maximumLength: Int) -> String {
+        guard value.count > maximumLength else { return value }
+        return String(value.prefix(maximumLength - 1)) + "…"
+    }
+}
+
 public final class NtfyNotificationService: @unchecked Sendable {
     private let serverURL: URL
     private let session: URLSession

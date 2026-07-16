@@ -24,14 +24,14 @@ The installer builds the app locally, installs it as `~/Applications/Codex Monit
 - Draws a smooth white light trail around the quota badge while Codex is working.
 - Shows the number of active tasks in a blue badge.
 - Flashes once for every completed task, including multiple completions between status checks.
-- Optionally sends an iPhone push notification for every completed task through ntfy.
+- Optionally sends an iPhone push notification for every completed task through ntfy, including the project folder, remaining quota, and active task count.
 - Stops immediately for interrupted tasks without showing a completion flash.
 - Keeps the last known quota visible when Codex has been idle or its status is temporarily unavailable.
 - Provides a menu for active tasks, manual refresh, opening Codex, and testing the completion flash.
 
 ## Privacy
 
-Codex Monitor is read-only. It reads Codex lifecycle events from `~/.codex/state_5.sqlite` and local rollout files, and queries the bundled Codex app-server for rate-limit information. It does not modify Codex data or send task content anywhere.
+Codex Monitor is read-only. It reads Codex lifecycle events from `~/.codex/state_5.sqlite` and local rollout files, and queries the bundled Codex app-server for rate-limit information. It does not modify Codex data. If iPhone notifications are enabled, the project folder name, remaining quota, and active task count are sent to ntfy.
 
 ## Requirements
 
@@ -48,8 +48,8 @@ xcode-select --install
 ## iPhone notifications
 
 1. Install `ntfy` from the iOS App Store.
-2. Open the Codex Monitor menu and choose **复制 iPhone 订阅地址** (Copy iPhone Subscription URL).
-3. Add that URL as a subscription in the ntfy app.
+2. Open the Codex Monitor menu and choose **复制 iPhone Topic** (Copy iPhone Topic).
+3. Paste the topic name into the ntfy app and subscribe using the default `ntfy.sh` server.
 4. Enable **iPhone 通知** (iPhone Notifications) in the Codex Monitor menu.
 5. Choose **发送 iPhone 测试消息** (Send iPhone Test Notification) to verify delivery.
 

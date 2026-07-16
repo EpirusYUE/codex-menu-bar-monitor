@@ -106,7 +106,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let ids = Set(tasks.map(\.id))
         if lastRunningIDs != nil, snapshot.newlyCompletedEventCount > 0 {
             enqueueFlashes(snapshot.newlyCompletedEventCount)
-            sendPhoneCompletionNotifications(snapshot.newlyCompletedEventCount)
+            sendPhoneCompletionNotifications(
+                snapshot.newlyCompletedTasks,
+                remainingTaskCount: snapshot.runningTasks.count
+            )
         }
         lastRunningIDs = ids
         runningTasks = tasks
@@ -182,13 +185,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         phoneNotificationsEnabled = defaults.bool(forKey: "phoneNotifications.enabled")
     }
 
-    private func sendPhoneCompletionNotifications(_ count: Int) {
+    private func sendPhoneCompletionNotifications(
+        _ completedTasks: [CodexTask],
+        remainingTaskCount: Int
+    ) {
         guard phoneNotificationsEnabled else { return }
-        for _ in 0..<count {
+        for task in completedTasks {
+            let content = CompletionNotificationFormatter.content(
+                task: task,
+                quota: quota,
+                remainingTaskCount: remainingTaskCount
+            )
             phoneNotifier.send(
                 topic: phoneTopic,
-                title: "Codex 任务完成",
-                message: "一个 Codex 任务已完成"
+                title: content.title,
+                message: content.message
             )
         }
     }
@@ -322,7 +333,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         phoneToggle.state = phoneNotificationsEnabled ? .on : .off
         menu.addItem(phoneToggle)
         menu.addItem(NSMenuItem(
-            title: "复制 iPhone 订阅地址",
+            title: "复制 iPhone Topic",
             action: #selector(copyPhoneSubscriptionURL),
             keyEquivalent: ""
         ))
@@ -363,16 +374,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func copyPhoneSubscriptionURL() {
-        guard let url = phoneNotifier.subscriptionURL(topic: phoneTopic) else { return }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        NSPasteboard.general.setString(phoneTopic, forType: .string)
     }
 
     @objc private func testPhoneNotification() {
+        let quotaText = quota.map { "\($0.windowLabel) \($0.remainingPercent)%" }
+            ?? "用量暂不可用"
         phoneNotifier.send(
             topic: phoneTopic,
             title: "Codex Monitor",
-            message: "测试通知发送成功"
+            message: "测试成功 · \(quotaText) · 剩余任务 \(runningTasks.count)"
         )
     }
 

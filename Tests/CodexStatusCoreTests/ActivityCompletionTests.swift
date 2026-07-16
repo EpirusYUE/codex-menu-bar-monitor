@@ -20,6 +20,7 @@ import Testing
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
             rollout_path TEXT NOT NULL,
+            cwd TEXT NOT NULL,
             archived INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         );
@@ -28,7 +29,7 @@ import Testing
 
     let insert = """
         INSERT INTO threads VALUES (
-            'thread-1', 'Test task', '\(rolloutURL.path)', 0,
+            'thread-1', 'Test task', '\(rolloutURL.path)', '/tmp/sample-project', 0,
             CAST(strftime('%s','now') AS INTEGER)
         );
         """
@@ -47,6 +48,8 @@ import Testing
     let completed = try reader.readSnapshot()
     #expect(completed.runningTasks.isEmpty)
     #expect(completed.newlyCompletedEventCount == 1)
+    #expect(completed.newlyCompletedTasks.count == 1)
+    #expect(completed.newlyCompletedTasks.first?.workingDirectory == "/tmp/sample-project")
 
     // A complete event must still be reported if a new turn starts before the
     // next sample and the thread remains in the running set.
@@ -54,6 +57,7 @@ import Testing
     let completedThenRestarted = try reader.readSnapshot()
     #expect(completedThenRestarted.runningTasks.count == 1)
     #expect(completedThenRestarted.newlyCompletedEventCount == 1)
+    #expect(completedThenRestarted.newlyCompletedTasks.count == 1)
 }
 
 private func append(_ text: String, to url: URL) throws {
