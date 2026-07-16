@@ -7,8 +7,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: 30)
     private let reader = CodexActivityReader()
     private let quotaReader = CodexRateLimitReader()
+    private let phoneNotifier = NtfyNotificationService()
     private var runningTasks: [CodexTask] = []
     private var quota: CodexQuota?
+    private var phoneTopic = ""
+    private var phoneNotificationsEnabled = false
     private var lastRunningIDs: Set<String>?
     private var pollTimer: Timer?
     private var quotaTimer: Timer?
@@ -56,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         loadCachedQuota()
+        loadPhoneNotificationSettings()
         configureStatusItem()
         refresh()
         refreshQuota()
@@ -102,6 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let ids = Set(tasks.map(\.id))
         if lastRunningIDs != nil, snapshot.newlyCompletedEventCount > 0 {
             enqueueFlashes(snapshot.newlyCompletedEventCount)
+            sendPhoneCompletionNotifications(snapshot.newlyCompletedEventCount)
         }
         lastRunningIDs = ids
         runningTasks = tasks
@@ -164,6 +169,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         defaults.set(quota.remainingPercent, forKey: "quota.remainingPercent")
         defaults.set(quota.windowLabel, forKey: "quota.windowLabel")
         defaults.set(quota.windowDurationMinutes, forKey: "quota.windowDurationMinutes")
+    }
+
+    private func loadPhoneNotificationSettings() {
+        let defaults = UserDefaults.standard
+        if let savedTopic = defaults.string(forKey: "phoneNotifications.topic") {
+            phoneTopic = savedTopic
+        } else {
+            phoneTopic = NtfyNotificationService.generateTopic()
+            defaults.set(phoneTopic, forKey: "phoneNotifications.topic")
+        }
+        phoneNotificationsEnabled = defaults.bool(forKey: "phoneNotifications.enabled")
+    }
+
+    private func sendPhoneCompletionNotifications(_ count: Int) {
+        guard phoneNotificationsEnabled else { return }
+        for _ in 0..<count {
+            phoneNotifier.send(
+                topic: phoneTopic,
+                title: "Codex 任务完成",
+                message: "一个 Codex 任务已完成"
+            )
+        }
     }
 
     private func enqueueFlashes(_ count: Int) {
@@ -287,6 +314,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem(title: "立即刷新", action: #selector(refreshFromMenu), keyEquivalent: "r"))
         menu.addItem(NSMenuItem(title: "测试完成闪烁", action: #selector(testFlash), keyEquivalent: ""))
         menu.addItem(.separator())
+        let phoneToggle = NSMenuItem(
+            title: "iPhone 通知",
+            action: #selector(togglePhoneNotifications),
+            keyEquivalent: ""
+        )
+        phoneToggle.state = phoneNotificationsEnabled ? .on : .off
+        menu.addItem(phoneToggle)
+        menu.addItem(NSMenuItem(
+            title: "复制 iPhone 订阅地址",
+            action: #selector(copyPhoneSubscriptionURL),
+            keyEquivalent: ""
+        ))
+        menu.addItem(NSMenuItem(
+            title: "发送 iPhone 测试消息",
+            action: #selector(testPhoneNotification),
+            keyEquivalent: ""
+        ))
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "退出 Codex Monitor", action: #selector(quit), keyEquivalent: "q"))
         for item in menu.items { item.target = self }
     }
@@ -304,6 +349,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshQuota()
     }
     @objc private func testFlash() { enqueueFlashes(1) }
+
+    @objc private func togglePhoneNotifications() {
+        phoneNotificationsEnabled.toggle()
+        UserDefaults.standard.set(phoneNotificationsEnabled, forKey: "phoneNotifications.enabled")
+        if phoneNotificationsEnabled {
+            phoneNotifier.send(
+                topic: phoneTopic,
+                title: "Codex Monitor",
+                message: "iPhone 通知已开启"
+            )
+        }
+    }
+
+    @objc private func copyPhoneSubscriptionURL() {
+        guard let url = phoneNotifier.subscriptionURL(topic: phoneTopic) else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+    }
+
+    @objc private func testPhoneNotification() {
+        phoneNotifier.send(
+            topic: phoneTopic,
+            title: "Codex Monitor",
+            message: "测试通知发送成功"
+        )
+    }
+
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
