@@ -14,11 +14,14 @@ public enum CompletionNotificationFormatter {
         let folderName = URL(fileURLWithPath: task.workingDirectory).lastPathComponent
         let rawFolder = folderName.isEmpty ? task.workingDirectory : folderName
         let displayFolder = abbreviated(rawFolder, maximumLength: 18)
-        let quotaText = quota.map { "\($0.windowLabel) \($0.remainingPercent)%" }
+        let quotaText = quota.map { "\($0.remainingPercent)% \($0.windowLabel)" }
             ?? "用量暂不可用"
+        let remainingTasksText = remainingTaskCount > 0
+            ? " 剩余任务 \(remainingTaskCount)"
+            : ""
         return CompletionNotificationContent(
             title: "Codex 任务完成",
-            message: "\(displayFolder) · \(quotaText) · 剩余任务 \(remainingTaskCount)"
+            message: "\(displayFolder) \(quotaText)\(remainingTasksText)"
         )
     }
 

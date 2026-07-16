@@ -42,7 +42,7 @@ import Testing
         remainingTaskCount: 2
     )
     #expect(content.title == "Codex 任务完成")
-    #expect(content.message == "sample-project · 5h 72% · 剩余任务 2")
+    #expect(content.message == "sample-project 72% 5h 剩余任务 2")
 }
 
 @Test func abbreviatesLongProjectFolder() {
@@ -58,5 +58,22 @@ import Testing
         quota: nil,
         remainingTaskCount: 0
     )
-    #expect(content.message == "this-is-a-very-lo… · 用量暂不可用 · 剩余任务 0")
+    #expect(content.message == "this-is-a-very-lo… 用量暂不可用")
+}
+
+@Test func formatsWeeklyQuotaWithNoRemainingTasks() {
+    let task = CodexTask(
+        id: "thread-1",
+        title: "Test task",
+        rolloutPath: "/tmp/rollout.jsonl",
+        workingDirectory: "/Users/test/Documents/sample-project",
+        startedAt: nil
+    )
+    let quota = CodexQuota(remainingPercent: 24, windowLabel: "w", windowDurationMinutes: 10_080)
+    let content = CompletionNotificationFormatter.content(
+        task: task,
+        quota: quota,
+        remainingTaskCount: 0
+    )
+    #expect(content.message == "sample-project 24% w")
 }

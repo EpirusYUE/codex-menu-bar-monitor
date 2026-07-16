@@ -379,12 +379,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func testPhoneNotification() {
-        let quotaText = quota.map { "\($0.windowLabel) \($0.remainingPercent)%" }
+        let quotaText = quota.map { "\($0.remainingPercent)% \($0.windowLabel)" }
             ?? "用量暂不可用"
+        let remainingTasksText = runningTasks.isEmpty
+            ? ""
+            : " 剩余任务 \(runningTasks.count)"
         phoneNotifier.send(
             topic: phoneTopic,
             title: "Codex Monitor",
-            message: "测试成功 · \(quotaText) · 剩余任务 \(runningTasks.count)"
+            message: "测试成功 \(quotaText)\(remainingTasksText)"
         )
     }
 
