@@ -383,11 +383,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ?? "用量暂不可用"
         let remainingTasksText = runningTasks.isEmpty
             ? ""
-            : " 剩余任务 \(runningTasks.count)"
+            : "　剩余任务 \(runningTasks.count)"
         phoneNotifier.send(
             topic: phoneTopic,
             title: "Codex Monitor",
-            message: "测试成功 \(quotaText)\(remainingTasksText)"
+            message: "测试成功　\(quotaText)\(remainingTasksText)"
         )
     }
 

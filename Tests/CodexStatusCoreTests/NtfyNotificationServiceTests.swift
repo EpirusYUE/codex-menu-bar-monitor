@@ -42,7 +42,7 @@ import Testing
         remainingTaskCount: 2
     )
     #expect(content.title == "Codex 任务完成")
-    #expect(content.message == "sample-project 72% 5h 剩余任务 2")
+    #expect(content.message == "sample-project　72% 5h　剩余任务 2")
 }
 
 @Test func abbreviatesLongProjectFolder() {
@@ -58,7 +58,7 @@ import Testing
         quota: nil,
         remainingTaskCount: 0
     )
-    #expect(content.message == "this-is-a-very-lo… 用量暂不可用")
+    #expect(content.message == "this-is-a-very-lo…　用量暂不可用")
 }
 
 @Test func formatsWeeklyQuotaWithNoRemainingTasks() {
@@ -75,5 +75,5 @@ import Testing
         quota: quota,
         remainingTaskCount: 0
     )
-    #expect(content.message == "sample-project 24% w")
+    #expect(content.message == "sample-project　24% w")
 }

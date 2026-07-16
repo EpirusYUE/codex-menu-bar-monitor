@@ -17,11 +17,11 @@ public enum CompletionNotificationFormatter {
         let quotaText = quota.map { "\($0.remainingPercent)% \($0.windowLabel)" }
             ?? "用量暂不可用"
         let remainingTasksText = remainingTaskCount > 0
-            ? " 剩余任务 \(remainingTaskCount)"
+            ? "　剩余任务 \(remainingTaskCount)"
             : ""
         return CompletionNotificationContent(
             title: "Codex 任务完成",
-            message: "\(displayFolder) \(quotaText)\(remainingTasksText)"
+            message: "\(displayFolder)　\(quotaText)\(remainingTasksText)"
         )
     }
 
